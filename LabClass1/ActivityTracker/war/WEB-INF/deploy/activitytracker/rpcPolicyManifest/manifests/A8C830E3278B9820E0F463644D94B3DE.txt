@@ -1,0 +1,2 @@
+serviceClass: dk.itu.activitytracker.client.GreetingService
+path: E734D8F6DDD73A1D9560E2884E735078.gwt.rpc
