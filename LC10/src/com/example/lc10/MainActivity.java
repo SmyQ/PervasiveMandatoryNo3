@@ -132,6 +132,8 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 					
 					workingFile = new File(filename.getAbsolutePath());				
 					
+					addColumnNamestoCsvFile();
+					
 					wakeLock.acquire();
 					isRecording = true;
 					elapsedTime = System.currentTimeMillis();
@@ -183,6 +185,31 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 
 	}
 	
+	private void addColumnNamestoCsvFile()
+	{
+		String[] columnNames = {"Date", "X", "Y", "Z", "Activity"};
+		
+		try {		
+
+			FileWriter fw = new FileWriter(workingFile, true);
+			BufferedWriter out = new BufferedWriter(fw);
+			
+			for(int i=0; i<columnNames.length; i++) {
+				if(i == columnNames.length -1) {
+					out.write(columnNames[i] + "\n");
+				} else {
+					out.write(columnNames[i] + ";");
+				}
+			}
+			
+			out.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			Post(e.getMessage());
+		}	
+	}
+	
 	@Override
 	public void onSensorChanged(SensorEvent event) {		
 		if(isRecording){
@@ -198,7 +225,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 
 					FileWriter fw = new FileWriter(workingFile, true);
 					BufferedWriter out = new BufferedWriter(fw);
-					out.write(d.toString() + ";" + v[0] + ";" + v[1] + ";" + v[2] + "\n");
+					out.write(d.toString() + ";" + v[0] + ";" + v[1] + ";" + v[2] + ";" + spinnerLocomotionActivity.getSelectedItem().toString() +"\n");
 					out.close();
 					
 				} catch (IOException e) {

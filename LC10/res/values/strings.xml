@@ -6,6 +6,7 @@
     <string name="hello_world">Hello world!</string>
 
     <string-array name="locomotion_activities_arrays">
+        <item></item>
         <item>walking</item>
         <item>climbing</item>
         <item>sitting</item>
