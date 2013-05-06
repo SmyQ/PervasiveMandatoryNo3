@@ -35,6 +35,7 @@ import android.support.v4.app.FragmentActivity;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 public class MainActivity extends FragmentActivity implements SensorEventListener {
@@ -44,9 +45,10 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 	private boolean isRecording = false;
 	private long elapsedTime = 0;
 	private File workingFile;
-	private Intent sensorIntent;
+	//private Intent sensorIntent;
 	private final Handler mhandler = new Handler();
 	private TextView message;
+	private Spinner spinnerLocomotionActivity;
 	private WakeLock wakeLock;
 	
 	private static int numberOfDatapoints = 0;
@@ -88,10 +90,11 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 		setContentView(R.layout.activity_main);
 		
 		message = (TextView)findViewById(R.id.textView1);
-		sensorIntent = new Intent(this, SensorService.class);
+		//sensorIntent = new Intent(this, SensorService.class);
 		PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
 		wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LC10");	
 			
+		spinnerLocomotionActivity = (Spinner) findViewById(R.id.spinner1);
 		
 		Button startButton = (Button)findViewById(R.id.startbutton);
 		startButton.setOnClickListener(new View.OnClickListener() {
@@ -110,7 +113,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 					if(!path.exists())
 						path.mkdir();
 					
-					File filename = new File(path.getAbsolutePath() + "/" + formattedDate + ".csv");
+					File filename = new File(path.getAbsolutePath() + "/" + formattedDate + " " + spinnerLocomotionActivity.getSelectedItem().toString() + ".csv");
 					if(filename.exists()){
 						File[] files = path.listFiles();
 						int highestIndex = 0;
@@ -210,13 +213,13 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 	protected void onDestroy(){
 		super.onDestroy();
 		wakeLock.release();
-		stopService(sensorIntent);
+		//stopService(sensorIntent);
 	}
 	
 	protected void onResume(){
 		super.onResume();
 		wakeLock.acquire();
-		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+		 if(this != null && accelerometer != null) sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
 	}
 	
 	protected void onPause(){

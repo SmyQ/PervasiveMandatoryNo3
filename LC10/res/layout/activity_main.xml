@@ -53,5 +53,14 @@
         android:layout_alignLeft="@+id/uploadbutton"
         android:layout_marginBottom="15dp"
         android:text="Press start to record activity..." />
+
+    <Spinner
+        android:id="@+id/spinner1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/stopbutton"
+        android:layout_below="@+id/stopbutton"
+        android:layout_marginTop="34dp"
+        android:entries="@array/locomotion_activities_arrays" />
     
 </RelativeLayout>

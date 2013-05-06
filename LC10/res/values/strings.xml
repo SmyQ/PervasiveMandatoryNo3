@@ -5,4 +5,10 @@
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
 
+    <string-array name="locomotion_activities_arrays">
+        <item>walking</item>
+        <item>climbing</item>
+        <item>sitting</item>
+    </string-array>
+    
 </resources>
