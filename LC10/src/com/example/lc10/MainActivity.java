@@ -43,13 +43,16 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 	public SensorManager sensorManager;
 	public Sensor accelerometer;
 	private boolean isRecording = false;
+	private long startTime = 0;
 	private long elapsedTime = 0;
-	private File workingFile;
+	private static File workingFile;
 	//private Intent sensorIntent;
 	private final Handler mhandler = new Handler();
 	private TextView message;
 	private Spinner spinnerLocomotionActivity;
 	private WakeLock wakeLock;
+	private String delimiter = ",";
+	private static ArrayList<DataPoint> dataPoints;
 	
 	private static int numberOfDatapoints = 0;
 	
@@ -92,7 +95,8 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 		message = (TextView)findViewById(R.id.textView1);
 		//sensorIntent = new Intent(this, SensorService.class);
 		PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
-		wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LC10");	
+		wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LC10");
+		dataPoints = new ArrayList<DataPoint>();
 			
 		spinnerLocomotionActivity = (Spinner) findViewById(R.id.spinner1);
 		
@@ -105,7 +109,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 				Post("Recording started.");
 								
 				try
-				{				
+				{
 					DateFormat df = new SimpleDateFormat("dd_MM_yy");
 					String formattedDate = df.format(new Date());				
 					
@@ -113,7 +117,9 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 					if(!path.exists())
 						path.mkdir();
 					
-					File filename = new File(path.getAbsolutePath() + "/" + formattedDate + " " + spinnerLocomotionActivity.getSelectedItem().toString() + ".csv");
+					String locomotion = spinnerLocomotionActivity.getSelectedItem().toString();
+					
+					File filename = new File(path.getAbsolutePath() + "/" + formattedDate + (locomotion.length() > 0 ? "_" + locomotion : "") + ".csv");
 					if(filename.exists()){
 						File[] files = path.listFiles();
 						int highestIndex = 0;
@@ -136,10 +142,8 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 					
 					wakeLock.acquire();
 					isRecording = true;
+					startTime = System.currentTimeMillis();
 					elapsedTime = System.currentTimeMillis();
-					
-//					sensorIntent.putExtra("filename", filename.getAbsolutePath());
-//					startService(sensorIntent);
 				}
 				catch(Exception e){
 					Post(e.getMessage());
@@ -154,13 +158,21 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 			public void onClick(View v) {
 				isRecording = false;
 				elapsedTime = 0;
-				workingFile = null;
-				wakeLock.release();
+				startTime = 0;
+				
+				wakeLock.release();				
 				Post("Recording stopped. Datapoints: " + numberOfDatapoints);
 				numberOfDatapoints = 0;
-				//stopService(sensorIntent);
+				
+				Date stoptime = new Date();
+				CleanDataOfLastRecordings(stoptime);
+				SaveDataToFile();
+				
+				workingFile = null;
 				
 			}
+
+
 		});
 		
 		
@@ -171,6 +183,8 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 			public void onClick(View v) {
 				HttpClient client = new DefaultHttpClient();
 				HttpPost post = new HttpPost("http://192.168.1.33:8888/activitytracker");
+				
+				
 				// TODO: Upload .csv file
 
 				
@@ -182,12 +196,28 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 		sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
-
+	}
+	
+	private void CleanDataOfLastRecordings(Date stoptime) {
+		ArrayList<DataPoint> toBeRemoved = new ArrayList<DataPoint>();
+		if(!dataPoints.isEmpty()){
+			for(DataPoint dp : dataPoints){
+				long diffInSeconds = (stoptime.getTime() - dp.getDate().getTime()) / 1000;
+				if(diffInSeconds <= 2){
+					toBeRemoved.add(dp);					
+				}				
+			}
+			
+			for(DataPoint dp: toBeRemoved){
+				dataPoints.remove(dp);
+			}			
+		}
+		
 	}
 	
 	private void addColumnNamestoCsvFile()
 	{
-		String[] columnNames = {"Date", "X", "Y", "Z", "Activity"};
+		String[] columnNames = {"X", "Y", "Z", "Activity"};
 		
 		try {		
 
@@ -198,7 +228,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 				if(i == columnNames.length -1) {
 					out.write(columnNames[i] + "\n");
 				} else {
-					out.write(columnNames[i] + ";");
+					out.write(columnNames[i] + delimiter);
 				}
 			}
 			
@@ -211,25 +241,20 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 	}
 	
 	@Override
-	public void onSensorChanged(SensorEvent event) {		
-		if(isRecording){
-			long delta = System.currentTimeMillis();
+	public void onSensorChanged(SensorEvent event) {
+		long delta = System.currentTimeMillis();
+		if(isRecording && (delta - startTime) >= 2500){			
 			if(elapsedTime != 0 && (delta - elapsedTime) >= 50){ 
 				elapsedTime = delta;
 				numberOfDatapoints++;
 				float[] v = event.values;
 				
-				Date d = new Date();
-				
-				try {		
-
-					FileWriter fw = new FileWriter(workingFile, true);
-					BufferedWriter out = new BufferedWriter(fw);
-					out.write(d.toString() + ";" + v[0] + ";" + v[1] + ";" + v[2] + ";" + spinnerLocomotionActivity.getSelectedItem().toString() +"\n");
-					out.close();
+				Date d = new Date();				
+				try {
 					
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					dataPoints.add(new DataPoint(d, v[0], v[1], v[2]));
+					
+				} catch (Exception e) {				
 					Post(e.getMessage());
 				}			
 			}
@@ -239,8 +264,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 	@Override
 	protected void onDestroy(){
 		super.onDestroy();
-		wakeLock.release();
-		//stopService(sensorIntent);
+		wakeLock.release();		
 	}
 	
 	protected void onResume(){
@@ -269,9 +293,6 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 		
 	}
 	
-
-
-	
     public void Post(final String msg){
   		mhandler.post(new Runnable(){
 
@@ -282,6 +303,20 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 			}
   			
   		});
+    }
+    
+    private void SaveDataToFile(){
+			try {
+				FileWriter fw = new FileWriter(workingFile, true);
+				BufferedWriter out = new BufferedWriter(fw);
+				
+				for(DataPoint dp : dataPoints){
+					out.write(dp.getX() + delimiter + dp.getY() + delimiter + dp.getZ() + delimiter + spinnerLocomotionActivity.getSelectedItem().toString() +"\n");
+					out.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}	
     }
 
 	private void SendAccelerometerData(float[] v, String username) {
