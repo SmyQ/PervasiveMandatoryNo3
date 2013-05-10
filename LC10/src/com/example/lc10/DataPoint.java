@@ -3,27 +3,27 @@ package com.example.lc10;
 import java.util.Date;
 
 public class DataPoint {
-	public float x;
-	public float y;
-	public float z;
+	public String x;
+	public String y;
+	public String z;
 	public Date d;
 		
 	public DataPoint(Date d, float x, float y, float z){
-		this.x = x;
-		this.y = y;
-		this.z = z;
+		this.x = String.valueOf(x);
+		this.y = String.valueOf(y);
+		this.z = String.valueOf(z);
 		this.d = d;
 	}
 	
-	public float getX(){
+	public String getX(){
 		return x;
 	}
 	
-	public float getY(){
+	public String getY(){
 		return y;
 	}
 	
-	public float getZ(){
+	public String getZ(){
 		return z;
 	}
 	

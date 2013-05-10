@@ -18,6 +18,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
+import com.google.gson.Gson;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -182,11 +184,25 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 			@Override
 			public void onClick(View v) {
 				HttpClient client = new DefaultHttpClient();
-				HttpPost post = new HttpPost("http://192.168.1.33:8888/activitytracker");
+				HttpPost post = new HttpPost("http://10.6.6.181:8888/activityappengine/tracker");
 				
+				Gson gson = new Gson();
+				String data = gson.toJson(dataPoints);
 				
-				// TODO: Upload .csv file
-
+				try
+				{
+					List<NameValuePair> parameters = new ArrayList<NameValuePair>();
+					parameters.add(new BasicNameValuePair("activity", data));					
+					post.setEntity(new UrlEncodedFormEntity(parameters));
+					
+					HttpResponse response = client.execute(post);
+					
+				}
+				catch(Exception e){
+					
+				}
+				
+//				dataPoints.clear();
 				
 			}
 		});
@@ -319,26 +335,5 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
 			}	
     }
 
-	private void SendAccelerometerData(float[] v, String username) {
-		HttpClient client = new DefaultHttpClient();
-		HttpPost post = new HttpPost("http://192.168.1.33:8888/activitytracker");
-		
-		try
-		{
-			List<NameValuePair> parameters = new ArrayList<NameValuePair>();
-			parameters.add(new BasicNameValuePair("x", String.valueOf(v[0])));
-			parameters.add(new BasicNameValuePair("y", String.valueOf(v[1])));
-			parameters.add(new BasicNameValuePair("z", String.valueOf(v[2])));
-			parameters.add(new BasicNameValuePair("username", username));
-			post.setEntity(new UrlEncodedFormEntity(parameters));
-			
-			HttpResponse response = client.execute(post);
-			
-		}
-		catch(Exception e){
-			
-		}
-		
-	}
 
 }
